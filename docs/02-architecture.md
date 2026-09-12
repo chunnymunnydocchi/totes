@@ -133,7 +133,7 @@ totes/
 │ │ │ ├── AiClientInterface.php
 │ │ │ ├── GroqClient.php
 │ │ │ ├── PromptBuilder.php
-│ │ │ └── dto/
+│ │ │ └── DTO/
 │ │ │ ├── GeneratedCard.php
 │ │ │ └── SessionAnalysis.php
 │ │ └── SpacedRepetition/
