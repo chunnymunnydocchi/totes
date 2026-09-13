@@ -33,4 +33,10 @@ class Deck extends Model
     {
         return $this->hasMany(Card::class);
     }
+    public function dueCards(): HasMany
+    {
+        return $this->hasMany(Card::class)
+            ->whereNotNull('due_at')
+            ->where('due_at', '<=', now());
+    }
 }

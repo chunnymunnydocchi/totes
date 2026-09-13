@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Web\DeckController;
+use App\Http\Controllers\Web\Settings\AppearanceController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -24,4 +26,10 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__.'/auth.php';
+Route::middleware('auth')->group(function () {
+    Route::resource('decks', DeckController::class);
+    Route::patch('settings/appearance', [AppearanceController::class, 'update'])
+        ->name('settings.appearance.update');
+});
+
+require __DIR__ . '/auth.php';
