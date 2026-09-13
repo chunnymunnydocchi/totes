@@ -437,7 +437,6 @@ export default function ColorPicker({ value, onChange }: Props) {
                     key={color.value}
                     type="button"
                     onClick={() => onChange(color.value)}
-                    title={color.value}
                     aria-label={color.value}
                     className={
                         "h-8 w-8 rounded-full transition " +
@@ -452,6 +451,27 @@ export default function ColorPicker({ value, onChange }: Props) {
     );
 }
 ```
+
+**Correction (from Day 2 execution):** the initial `tailwind.config.js`
+shipped by Breeze has a content glob of `./resources/js/**/*.tsx`,
+which does NOT include `.ts` files. Since `deckColors.ts` is a `.ts`
+file that contains Tailwind class strings (`bg-blue-500`, etc.),
+Tailwind's JIT compiler never sees those class names and generates
+no CSS for them. The fix: change the glob to
+`./resources/js/**/*.{ts,tsx}`.
+
+This must be done BEFORE the color swatches will render correctly.
+If you see white or unstyled swatches, this is why.
+
+If a color still doesn't render after the config change, stop and
+restart `npm run dev`. Tailwind config changes aren't always picked
+up by hot reload.
+
+**Correction (from Day 2 execution):** the `title` attribute on each
+swatch renders the color name as a native browser tooltip on hover.
+This is visually cluttered and redundant (the color itself is the
+label). Remove the `title` attribute. Keep `aria-label` for screen
+readers.
 
 **Why `ring-gray-900` and not a color-matched ring:** the selected state
 should read the same for every color. A blue ring on a blue swatch is
@@ -1223,13 +1243,14 @@ wildcards. The active state should highlight for index, show, edit,
 create — every deck route. `decks.index` alone would un-highlight when
 viewing a deck, which feels wrong.
 
-**Why the mobile theme toggle is deliberately omitted:** the
-`ResponsiveNavLink` component is link-shaped. Fitting a button into it
-requires either a new component or a hack. On mobile, dark mode is
-best-effort until Day 7. The desktop toggle is enough for the demo,
-and adding a mobile variant is a Day 7 polish item, not a Day 2
-requirement. This is in the "not doing today" list at the end of
-Segment 3.
+**Correction (from Day 2 execution):** the mobile theme toggle was
+initially deferred to Day 7. This was wrong — "mobile responsiveness
+is a key part of the development process" makes a missing toggle a
+feature gap, not polish. Reclassified to Day 3, alongside the
+dark-mode sweep. Both touch `AuthenticatedLayout.tsx`.
+
+Separately, a systematic mobile responsiveness pass (every page
+checked at mobile viewport sizes) is scheduled for Day 7.
 
 ---
 

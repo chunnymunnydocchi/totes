@@ -138,6 +138,18 @@ php artisan make:test Decks/DeckCrudTest
 The generated stub extends `Tests\TestCase` and includes a single
 `test_example` method. We'll replace its body.
 
+**Correction (from Day 2 execution):** Breeze ships
+`tests/Feature/Auth/RegistrationTest.php` with an assertion that
+registration redirects to `/dashboard`. Since Segment 1 changed the
+redirect to `/decks`, this test will fail until updated. The fix is
+a one-line change: `route('dashboard', ...)` becomes
+`route('decks.index', ...)`. This update belongs with the Segment 1
+work in spirit, but the failure only surfaces when the full test
+suite runs — which is here, in Step 19's test run.
+
+Lesson: when changing behavior that Breeze's shipped tests assert,
+update the tests in the same commit as the behavior change.
+
 ### 19b. `tests/Feature/Decks/DeckCrudTest.php`
 
 ```php

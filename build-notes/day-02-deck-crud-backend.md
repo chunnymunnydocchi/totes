@@ -696,6 +696,21 @@ predictable set of values to assert against if they ever need to.
 php artisan tinker --execute "\$d = App\Models\Deck::factory()->create(); dump(\$d->id, \$d->name, \$d->icon, \$d->color, App\Models\Deck::count()); App\Models\Deck::truncate();"
 ```
 
+**Warning:** if you later run a cleanup command that includes
+`User::query()->delete()`, be aware it cascades: deleting users
+deletes their decks, cards, and review logs. In a development
+database this is fine; if you have real accounts you want to keep,
+use a targeted command (`User::where('email', 'like', '%@test%')->delete()`)
+or skip the cleanup entirely.
+
+**Correction (from Day 2 execution):** the truncate command in
+Step 5's PAUSE #3 fails on `decks` because the `cards` table has a
+foreign key pointing at it. Use `Deck::query()->delete()` instead,
+which respects FKs and cascades. If you also need to remove users,
+note that `User::query()->delete()` cascades to decks, cards, and
+review logs — including any real development accounts you've
+created.
+
 Expected: an integer ID, a name of three words, an icon from the pool,
 a color from the pool, and `Deck count = 1`. Then no error on truncate.
 This proves the factory and relation wiring work before any controller
