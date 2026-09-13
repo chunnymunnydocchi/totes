@@ -4,15 +4,20 @@
 > every session. It's a lightweight handoff — not a replacement for the
 > development log, just a quick "where we are right now" reference.
 
-**Last updated:** 2026-09-12 (Day 1, evening)
+**Last updated:** 2026-09-13 (Day 2, evening)
 
 ---
 
 ## Current Status
 
-- **Current day:** Day 1 complete. Day 2 begins next session.
-- **Phase:** Foundation is live. Laravel 12 running, MariaDB connected,
-  Breeze auth working, schema migrated, models wired, folder scaffold in place.
+- **Current day:** Day 2 complete. Day 3 begins next session.
+- **Phase:** Deck CRUD shipped. Users can create, view, edit, and delete
+  their own decks with a chosen icon (curated Iconify list) and color
+  (8-swatch palette). Theme toggle flips `<html class="dark">` and
+  persists to `users.theme` via `PATCH /settings/appearance`. The
+  dark-mode visual sweep across Breeze components is deliberately
+  deferred to Day 3 — the toggle flips the class, but surrounding
+  components still render light. This is a known gap, not a bug.
 - **Repo:** https://github.com/chunnymunnydocchi/totes.git
 - **Local path:** `~/Desktop/main works/totes`
 
@@ -59,18 +64,48 @@
 - [x] 25 tests passing (61 assertions)
 - [x] Tinker model wiring confirmed (users: 2, decks: 0, cards: 0)
 
+### Day 2 — Deck Management
+
+- [x] `StoreDeckRequest`, `UpdateDeckRequest`, `UpdateAppearanceRequest`
+- [x] `DeckPolicy` (viewAny, view, create, update, delete) — owner-only
+- [x] `Web\DeckController` — 7 resource methods
+- [x] `Web\Settings\AppearanceController@update`
+- [x] `Deck::dueCards()` relation
+- [x] `DeckFactory` with hardcoded icon/color pools
+- [x] `resources/js/Constants/deckIcons.ts` — curated list of 277 Iconify names
+- [x] `resources/js/Constants/deckColors.ts` — 8-color palette with Tailwind classes
+- [x] `IconPicker.tsx` — inline search, 200ms debounce, local filter, no API calls
+- [x] `ColorPicker.tsx` — 8 swatches, neutral ring on selection
+- [x] `ThemeToggle.tsx` — hybrid localStorage + server persistence
+- [x] `Pages/Decks/Index.tsx`, `Create.tsx`, `Edit.tsx`, `Show.tsx`
+- [x] `Pages/Decks/Partials/DeckForm.tsx`
+- [x] `AuthenticatedLayout.tsx` — Decks nav link, ThemeToggle in desktop nav
+- [x] `app.blade.php` — pre-paint theme script
+- [x] `types/index.d.ts` — `theme` on User
+- [x] `RegisteredUserController` redirects to `/decks`
+- [x] `tailwind.config.js` — content glob includes `.ts` files
+- [x] `RegistrationTest.php` — updated for the new redirect target
+- [x] 15 deck CRUD tests + 5 factory sanity tests
+- [x] All tests green: **45 tests, 157 assertions**
+- [x] Manual verification pass (10 checks, all green)
+- [x] `docs/10-development-log.md` — Day 2 entry written
+- [x] `build-notes/day-02-*.md` — three manuals committed, then corrected
+
 ---
 
 ## What's Next
 
-- [ ] **Day 2:** Deck CRUD + Icon picker + Dark mode
-    - `DeckController` (Web/Inertia) — index, create, store, show, edit, update, destroy
-    - `StoreDeckRequest`, `UpdateDeckRequest` — validation
-    - `DeckPolicy` — authorization (owner-only access)
-    - React pages: `Decks/Index.tsx`, `Decks/Create.tsx`, `Decks/Edit.tsx`, `Decks/Show.tsx`
-    - Iconify icon picker component
-    - 8-color deck palette (blue, purple, green, amber, rose, teal, indigo, slate)
-    - Dark mode toggle wired to `users.theme`
+- [ ] **Day 3:** Dark mode sweep + mobile theme toggle + Flashcard CRUD
+    - `dark:` variants across 12 Breeze components:
+      `AuthenticatedLayout`, `NavLink`, `ResponsiveNavLink`, `Dropdown`,
+      `TextInput`, `InputLabel`, `InputError`, `PrimaryButton`,
+      `SecondaryButton`, `DangerButton`, `Modal`, `Checkbox`
+    - **Mobile theme toggle** in the responsive nav (moved from Day 7)
+    - `CardController` (Web/Inertia) — full resource
+    - `StoreCardRequest`, `CardPolicy`
+    - React pages: `Cards/Create.tsx`, `Cards/Edit.tsx` (within deck)
+    - Fill in `Decks/Show.tsx` card list (paginated, 20/page)
+    - Wire the "Add card" button
 
 ---
 
@@ -82,39 +117,63 @@ None.
 
 ## Notes for Next Session
 
+- **Known gap:** Breeze components render light on `<html class="dark">`.
+  Day 3's first task is the dark sweep. Non-optional — `04-features.md`
+  §8.1 says "All components must have `dark:` variants. If a component
+  looks wrong in dark mode, that's a bug."
+- **Mobile theme toggle is Day 3, not Day 7.** Initial deferral was wrong;
+  "mobile responsiveness is key" makes it a feature gap, not polish. Both
+  the dark sweep and the mobile toggle touch `AuthenticatedLayout.tsx`.
+- **Systematic mobile responsiveness pass scheduled for Day 7.** Every page
+  checked at mobile viewport sizes (Chrome DevTools device toolbar),
+  tap targets, overflow, breakpoints from §8.2.
+- **Icon validation is shape-only.** Server accepts any `set:name`-shaped
+  string, not just members of `DECK_ICONS`. Documented in
+  `StoreDeckRequest`. Shaped-but-nonexistent icons render as empty slots.
+- **Tailwind content globs must include `.ts`.** The Breeze default only
+  had `**/*.tsx`. Any Tailwind class string in a `.ts` file needs the
+  glob updated. Already fixed in `tailwind.config.js`.
+- **`@tailwindcss/vite` is a dead dependency** in `package.json`, pulled in
+  by Laravel 12's default. Not imported, not used. Day 7 cleanup.
+- **`line-clamp-2`** — resolved via Tailwind config glob fix; works.
+- **Two migrations share identical timestamps** (`add_theme` / `create_decks`
+  pair, `ai_usage_logs` / `review_logs` pair). Harmless currently because
+  file-name ordering saves us. Fragile if a future migration depends on
+  order. Note only; no fix needed.
 - **PHP 8.4 standalone** at `C:\php84`. Git Bash `php` resolves there.
-  XAMPP's PHP 8.2 is no longer used.
-- **Laravel 12**, not 11. Day 0 docs say 11; the actual project is on 12.69.2.
-  Update `02-architecture.md`'s stack table when convenient.
-- **MariaDB, not MySQL.** XAMPP's bundled DB. Behaves compatibly for our schema.
+- **Laravel 12**, not 11. Day 0 docs say 11; update `02-architecture.md`'s
+  stack table when convenient.
+- **MariaDB, not MySQL.** XAMPP's bundled DB. Behaves compatibly.
 - **`DB_HOST=127.0.0.1`**, not `localhost`. Windows IPv6 resolution gotcha.
-- **PsySH pinned to 0.12.19** in `composer.json` (laravel/tinker's default
-  0.12.24 has a PHP 8.4 parse bug).
-- **`@types/node` bumped to `^22.0.0`** in `package.json` (Vite 7 requirement).
+- **PsySH pinned to 0.12.19** in `composer.json`.
+- **`@types/node` bumped to `^22.0.0`** (Vite 7 requirement).
 - **Startup sequence** for a new session:
     1. XAMPP Control Panel → start MySQL
     2. Terminal 1: `npm run dev`
     3. Terminal 2: `php artisan serve`
     4. Browser: `http://localhost:8000`
-- **Before committing:** `npm run build` if tests need to pass in the same session
-  (the Vite manifest is gitignored, so fresh clones and CI need it built).
+- **Before committing:** `npm run build` if tests need to pass in the same
+  session (Vite manifest is gitignored, so fresh clones and CI need it built).
+- **The `User::query()->delete()` cleanup command** cascades to decks,
+  cards, and review logs. If you have real development accounts you want
+  to keep, avoid it or scope it narrowly.
 
 ---
 
 ## Day Counter
 
-| Day | Status  | Focus                               |
-| --- | ------- | ----------------------------------- |
-| 0   | ✅ Done | Documentation                       |
-| 1   | ✅ Done | Foundation                          |
-| 2   | ⏳ Next | Deck CRUD + Icon picker + Dark mode |
-| 3   | Pending | Flashcard CRUD                      |
-| 4   | Pending | AI generation (text + PDF/DOCX)     |
-| 5   | Pending | Study mode + SM-2                   |
-| 6   | Pending | Session analysis                    |
-| 7   | Pending | Polish + Security                   |
-| 8   | Pending | Deployment                          |
-| 9   | Pending | Buffer + Final docs                 |
+| Day | Status  | Focus                                       |
+| --- | ------- | ------------------------------------------- |
+| 0   | ✅ Done | Documentation                               |
+| 1   | ✅ Done | Foundation                                  |
+| 2   | ✅ Done | Deck CRUD + Icon picker + Theme toggle      |
+| 3   | ⏳ Next | Dark mode sweep + Mobile toggle + Card CRUD |
+| 4   | Pending | AI generation (text + PDF/DOCX)             |
+| 5   | Pending | Study mode + SM-2                           |
+| 6   | Pending | Session analysis                            |
+| 7   | Pending | Polish + Security + Responsiveness pass     |
+| 8   | Pending | Deployment                                  |
+| 9   | Pending | Buffer + Final docs                         |
 
 ---
 
