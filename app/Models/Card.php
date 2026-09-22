@@ -40,4 +40,9 @@ class Card extends Model
     {
         return $this->hasMany(ReviewLog::class);
     }
+
+    public function isDue(): bool
+    {
+        return $this->due_at !== null && $this->due_at->isPast();
+    }
 }

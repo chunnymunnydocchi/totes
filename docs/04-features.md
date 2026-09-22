@@ -253,7 +253,7 @@ Same form as Create, pre-filled. Submit button reads "Save changes."
 **Route:** `GET /decks/{deck}/cards/create`, `POST /decks/{deck}/cards`
 **Controller:** `Web\CardController@create`, `@store`
 **Request:** `StoreCardRequest`
-**Authorization:** via `DeckPolicy@update` (parent deck)
+**Authorization:** via `CardPolicy@create` (parent deck passed to the policy)
 
 | Element                 | UI Copy                          |
 | ----------------------- | -------------------------------- |
@@ -373,18 +373,18 @@ The API returns:
 
 ```json
 {
-  "cards": [
-    {
-      "id": 42,
-      "front": "What is the derivative of ln(x)?",
-      "back": "1/x",
-      "explanation": "The derivative of the natural logarithm is the reciprocal of its argument, a standard result from calculus."
+    "cards": [
+        {
+            "id": 42,
+            "front": "What is the derivative of ln(x)?",
+            "back": "1/x",
+            "explanation": "The derivative of the natural logarithm is the reciprocal of its argument, a standard result from calculus."
+        }
+    ],
+    "usage": {
+        "generations_today": 3,
+        "generations_limit": 10
     }
-  ],
-  "usage": {
-    "generations_today": 3,
-    "generations_limit": 10
-  }
 }
 ```
 
@@ -517,18 +517,18 @@ Full details in 06-spaced-repetition.md.
 
 ```json
 {
-  "analysis": "You struggled most with cards about logarithmic differentiation and the chain rule. Focus on those before moving forward. Try explaining each step out loud as you solve — it forces your brain to commit the reasoning to memory, not just the answer. You rated 8 of 20 cards Easy, which is a strong start.",
-  "focus_cards": [
-    { "id": 12, "front": "What is the derivative of ln(x^2)?" },
-    {
-      "id": 15,
-      "front": "How do you apply the chain rule to nested functions?"
+    "analysis": "You struggled most with cards about logarithmic differentiation and the chain rule. Focus on those before moving forward. Try explaining each step out loud as you solve — it forces your brain to commit the reasoning to memory, not just the answer. You rated 8 of 20 cards Easy, which is a strong start.",
+    "focus_cards": [
+        { "id": 12, "front": "What is the derivative of ln(x^2)?" },
+        {
+            "id": 15,
+            "front": "How do you apply the chain rule to nested functions?"
+        }
+    ],
+    "usage": {
+        "analyses_today": 1,
+        "analyses_limit": 10
     }
-  ],
-  "usage": {
-    "analyses_today": 1,
-    "analyses_limit": 10
-  }
 }
 ```
 

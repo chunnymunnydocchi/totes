@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Web\CardController;
 use App\Http\Controllers\Web\DeckController;
 use App\Http\Controllers\Web\Settings\AppearanceController;
 use Illuminate\Foundation\Application;
@@ -28,6 +29,15 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::resource('decks', DeckController::class);
+    // Shallow-nesting names the non-shallow routes `decks.cards.*`, not
+    // `cards.*`. Override so all five routes share the `cards.*` prefix.
+    Route::resource('decks.cards', CardController::class)
+        ->shallow()
+        ->except(['index', 'show'])
+        ->names([
+            'create' => 'cards.create',
+            'store' => 'cards.store',
+        ]);
     Route::patch('settings/appearance', [AppearanceController::class, 'update'])
         ->name('settings.appearance.update');
 });

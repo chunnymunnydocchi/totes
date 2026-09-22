@@ -27,4 +27,4 @@ yarn-error.log
 Thumbs.db
 
 # Docs build artifacts (none yet, but future-proofing)
-/docs/.obsidian
+/docs/.obsidianstorage/framework/lsp-*.php

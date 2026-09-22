@@ -44,8 +44,13 @@ class DeckController extends Controller
 
         $deck->loadCount(['cards', 'dueCards']);
 
+        $cards = $deck->cards()
+            ->orderBy('due_at')
+            ->paginate(20);
+
         return Inertia::render('Decks/Show', [
             'deck' => $deck,
+            'cards' => $cards,
         ]);
     }
 
