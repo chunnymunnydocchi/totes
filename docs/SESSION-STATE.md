@@ -4,21 +4,22 @@
 > every session. It's a lightweight handoff — not a replacement for the
 > development log, just a quick "where we are right now" reference.
 
-**Last updated:** 2026-09-15 (Day 3, planning complete)
+**Last updated:** 2026-09-22 (Day 3a complete and committed; Day 3b pending)
 
 ---
 
 ## Current Status
 
-- **Current day:** Day 3 planning complete. Execution begins next session.
-- **Phase:** Two operations manuals written for Day 3 — `day-03a` (dark mode
-  sweep, mobile theme toggle, page sweep, Welcome reduction, Dashboard
-  removal) and `day-03b` (card CRUD). **No code from either manual has
-  been executed yet**, with one exception: the Dashboard removal (§6 of
-  `day-03a`) was applied and committed before planning finished. See
-  "What's Done → Day 3 planning" below.
+- **Current day:** Day 3, mid-execution. `day-03a` is done and pushed
+  (commit `87dfe4d`). `day-03b` (card CRUD) has not started.
+- **Phase:** Day 3a delivered the full dark-mode sweep across 25 files, the
+  mobile theme toggle move, the Welcome page reduction, and four §7 fixes
+  found during verification. Day 3b is unchanged from the original plan:
+  card CRUD.
 - **Repo:** https://github.com/chunnymunnydocchi/totes.git
 - **Local path:** `~/Desktop/main works/totes`
+- **HEAD:** `87dfe4d` — "Day 3a: dark mode sweep, mobile theme toggle,
+  Welcome reduction, Dashboard removal"
 
 ---
 
@@ -126,33 +127,108 @@
       commits with the identical message "Day 3: planning complete…"
       (`575f7a2` and `0affe11`). Harmless, no fix planned — rewriting
       pushed history for a cosmetic reason is not worth the risk on a
-      solo project.
+      solo project. **Kept in the record deliberately: the time spent
+      planning is part of the honest timeline.**
+
+### Day 3a — Dark Sweep, Mobile Toggle, Welcome Reduction (complete)
+
+**Commit:** `87dfe4d` — "Day 3a: dark mode sweep, mobile theme toggle,
+Welcome reduction, Dashboard removal"
+
+**Files touched (25 modified, 0 created, 0 deleted):**
+
+- [x] 14 components swept: `Checkbox`, `ColorPicker`, `DangerButton`,
+      `Dropdown`, `IconPicker`, `InputError`, `InputLabel`, `Modal`,
+      `NavLink`, `PrimaryButton`, `ResponsiveNavLink`, `SecondaryButton`,
+      `TextInput`, `ThemeToggle`
+- [x] `ApplicationLogo.tsx` — **not edited.** §2.10: the logo's dark
+      variant lives in the layout (`dark:text-gray-100` on the wrapper).
+- [x] `Layouts/AuthenticatedLayout.tsx` — full sweep + §3.4 mobile
+      toggle move (ThemeToggle to the left of the hamburger, `gap-1` on
+      the container) + §3.5 mobile dropdown name/email block
+- [x] 10 pages/partials swept: `Decks/Index`, `Create`, `Edit`, `Show`,
+      `Partials/DeckForm`, `Profile/Edit`, `Profile/Partials/DeleteUserForm`,
+      `UpdatePasswordForm`, `UpdateProfileInformationForm`, `Welcome`
+- [x] `Welcome.tsx` — full reduction. Header wordmark, hero title,
+      open-ended slogan, nav. Logged-in branch shows the user's name
+      truncated at 12 characters. Laravel marketing content deleted.
+- [x] §6 Dashboard removal — already in `30ed2c4`, verified not
+      re-executed.
+
+**§7 fixes discovered during verification (in the same commit):**
+
+- [x] `ResponsiveNavLink.tsx` active state — `dark:bg-indigo-950` →
+      `dark:bg-indigo-950/50`. The full-saturation indigo block was too
+      loud on `gray-900`; 50% opacity reads as a tint. Same treatment on
+      `dark:focus:bg-indigo-900` → `dark:focus:bg-indigo-900/50`.
+- [x] `ThemeToggle.tsx` — added `focus-visible:ring-2
+    focus-visible:ring-indigo-500 dark:focus-visible:ring-indigo-400
+    focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800`.
+      The component had `focus:outline-none` and no ring replacement.
+      `focus-visible` (not `focus`) so the ring appears on Tab, not on
+      mouse click. Offset matches the nav surface (`gray-800`), not the
+      page (`gray-900`).
+- [x] `IconPicker.tsx` — the search input had `focus:ring-0`, inherited
+      from the pre-sweep state. First fix attempt put the ring on the
+      input itself (`focus:ring-1 focus:ring-inset`), which rendered as
+      "the text inside is focused" instead of "the box is focused."
+      Correct fix: move the focus indicator to the **container** with
+      `focus-within:border-indigo-500 dark:focus-within:border-indigo-400
+    focus-within:ring-1 focus-within:ring-indigo-500
+    dark:focus-within:ring-indigo-400`, and revert the input to
+      `focus:ring-0`. Now matches every other input in the app.
+- [x] `Decks/Show.tsx` — description was a bare `<p>` on the page
+      background, reading as filler/sub-header. Wrapped in a surface
+      panel (`rounded-lg bg-white dark:bg-gray-800 p-4 shadow-sm
+    sm:p-6`), matching the existing visual language of the stat cards.
+      Also fixed mobile horizontal padding on the parent container:
+      `sm:px-6 lg:px-8` → `px-4 sm:px-6 lg:px-8`. The stat cards and
+      cards panel were also touching the mobile edge; one class fixed
+      all three.
+
+**Verification:**
+
+- [x] `npm run build` clean
+- [x] `php artisan test` — 45 passed, 157 assertions
+- [x] Manual light-mode pass (§7.2, 8 checks)
+- [x] Manual dark-mode pass (§7.3, 8 checks + §4.3 six-page list)
+- [x] Mobile pass (§7.4, toggle in top bar, no second toggle in menu)
+- [x] Welcome and Dashboard pass (§7.5, 5 checks)
+- [x] §4.3 deferred audit: `/decks/{id}/edit` and account-delete modal
+      confirmed in dark mode
+
+**Session-discovery note:** `git grep -n "dashboard"` returns six
+references in `app/Http/Controllers/Auth/*` — Breeze's post-auth
+redirects still point at `route('dashboard')`. This is **not a
+regression**: those redirects resolve to `/dashboard`, which
+`30ed2c4` made redirect to `decks.index`. One extra hop. The route
+name was kept specifically so these wouldn't 404. Cleanup (rewrite the
+six redirects, delete the route) is deferred to Day 7 — see below.
+
+**Session-discovery note:** `http://127.0.0.1:8000` and
+`http://localhost:8000` are different origins to the browser. A session
+cookie set on one is not sent to the other. During §6 verification this
+produced a false-positive "bug" — `/dashboard` redirected to `/login` at
+`127.0.0.1`, worked at `localhost`. Not a code bug. **Standardize on
+`localhost` in the browser for the rest of the build.** `DB_HOST` stays
+`127.0.0.1` (separate concern, PHP-side only).
 
 ---
 
 ## What's Next
 
-**Day 3 execution. Two manuals, in order. Do not interleave them.**
+**Day 3b execution. One manual: `build-notes/day-03b-card-crud.md`.**
+`day-03a` is committed; the manual's dependency ("`day-03a` must be
+committed first") is satisfied.
 
 ### Execution sequence
 
-1. **Start the stack** (see "Session startup" below).
-2. **`npm run build`** — refresh the Vite manifest. Tests that render
-   Inertia pages fail without it. This bit us already; don't skip it.
-3. **Execute `build-notes/day-03a-dark-sweep.md`.**
-    - §0–§1: prerequisites, palette. Read §1 fully before editing anything.
-    - §2: 16 component edits (§2.1–§2.16). Work top to bottom.
-    - §3: `AuthenticatedLayout` — mobile toggle move and dark variants.
-    - §4: page-level sweep across 8 page files. Pattern-driven; apply
-      the pattern, then per-file.
-    - §5: `Welcome.tsx` full reduction.
-    - **§6: SKIP.** Already applied and committed (`30ed2c4`). Read §6.5's
-      verification steps and run them to confirm state, but do not re-apply
-      §6.1–§6.4.
-    - §7: verify — `npm run build`, `php artisan test`, manual light/dark
-      passes, mobile check, Welcome/Dashboard check.
-    - §8: one commit for the whole sweep. Use the message in §8.
-4. **Execute `build-notes/day-03b-card-crud.md`.**
+1. **Start the stack** (see "Session startup" below). Use
+   `localhost:8000`, not `127.0.0.1:8000`.
+2. **`npm run build`** — refresh the Vite manifest before tests. The
+   manifest is gitignored, so `day-03a`'s build artifacts are on disk
+   but a fresh checkout would need a rebuild.
+3. **Execute `build-notes/day-03b-card-crud.md`.**
     - §3: backend — `StoreCardRequest`, `CardPolicy`, `CardController`,
       routes, `Card::isDue()`.
     - §4: `CardFactory`, `CardCrudTest`, `CardFactoryTest`.
@@ -164,9 +240,12 @@
     - §8: verify — tests, manual lifecycle, dark mode, authorization,
       pagination.
     - §9: one commit for card CRUD.
-5. **Update this file.** Change `Last updated`, add a "Day 3 — Execution"
-   subsection under What's Done, move Day 3 to done in the Day Counter.
-6. **Commit the state update, push.**
+4. **Update this file** with a "Day 3b — Execution" subsection under
+   What's Done, move Day 3 to done in the Day Counter.
+5. **Update `docs/10-development-log.md`** with the full Day 3 entry
+   (both 3a and 3b), same format as Day 2's entry. **Do this at end of
+   day, after 3b is committed** — the entry needs the full arc.
+6. **Commit the state + dev log updates, push.**
 
 ### Files this session will create
 
@@ -184,28 +263,19 @@ From `day-03b`:
 
 ### Files this session will modify
 
-From `day-03a` (unless noted, all currently unmodified):
-
-- 14 component files under `resources/js/Components/`
-- `resources/js/Layouts/AuthenticatedLayout.tsx` — mobile toggle move
-  (Dashboard links already removed in `30ed2c4`)
-- `resources/js/Pages/Decks/Index.tsx`, `Create.tsx`, `Edit.tsx`, `Show.tsx`
-- `resources/js/Pages/Decks/Partials/DeckForm.tsx`
-- `resources/js/Pages/Profile/Edit.tsx`
-- `resources/js/Pages/Profile/Partials/UpdateProfileInformationForm.tsx`,
-  `UpdatePasswordForm.tsx`, `DeleteUserForm.tsx`
-- `resources/js/Pages/Welcome.tsx` — full reduction (§5; the nav link was
-  already changed in `30ed2c4`, the rest of the page is still stock Laravel)
-
 From `day-03b`:
 
 - `app/Models/Card.php` — add `isDue()`
-- `routes/web.php` — add card routes
-- `app/Http/Controllers/Web/DeckController.php` — paginate cards in `show`
-- `app/Http/Middleware/HandleInertiaRequests.php` — share `flash.success`
+- `routes/web.php` — add shallow nested card routes
+- `app/Http/Controllers/Web/DeckController.php` — paginate cards in
+  `show`, pass `cards` prop
+- `app/Http/Middleware/HandleInertiaRequests.php` — share
+  `flash.success` via closure
 - `resources/js/types/index.d.ts` — extend `PageProps` with `flash`
-- `resources/js/Pages/Decks/Show.tsx` — card list, pagination, delete modal
-  (edited by `day-03a` §4.2 first, then by `day-03b` §6.5)
+- `resources/js/Pages/Decks/Show.tsx` — card list, pagination, delete
+  modal. **(This file was edited in `day-03a` §4.2. `day-03b` §6.5
+  edits it again. Apply `day-03b`'s changes on top of the committed
+  `day-03a` state.)**
 - `docs/04-features.md` §3.1 — authorization line: `CardPolicy`, not
   `DeckPolicy`
 
@@ -224,87 +294,133 @@ None.
 1. XAMPP Control Panel → start MySQL.
 2. Terminal 1: `npm run dev`
 3. Terminal 2: `php artisan serve`
-4. Browser: `http://localhost:8000`
+4. Browser: **`http://localhost:8000`** (not `127.0.0.1` — see the
+   origin-mismatch note in Day 3a's "What's Done").
 5. **Before running tests: `npm run build`.** The Vite manifest is
    gitignored and goes stale when frontend files change. One test in
    `DeckCrudTest` renders a real Inertia page and fails without it.
+   This bit us on Day 2; don't skip it.
 
-### Day 3 execution notes
+### Day 3b execution notes
 
-- **`day-03a` §6 is already done.** Skip it. Commit `30ed2c4` removed
-  Dashboard. §6.5's verification steps are worth running once to confirm
-  state, but §6.1–§6.4 are complete.
-- **Order matters within `day-03a`.** §2 (components) before §3 (layout)
-  before §4 (pages) before §5 (Welcome). The later sections depend on
-  earlier ones — pages use components; the Welcome reduction assumes the
-  palette is in place.
-- **`day-03a` §8 says one commit for the whole sweep.** Do not commit
-  mid-sweep. A half-swept dark mode is worse than none, because the
-  intermediate state is broken in ways that are hard to attribute.
-- **`day-03b` depends on `day-03a`.** Both edit `Decks/Show.tsx`. Apply
-  `day-03a` completely and commit it before starting `day-03b`.
-- **§6.3 of `day-03b` was wired against `HandleInertiaRequests.php`.** The
-  exact edit is in the manual. It adds a `flash.success` shared prop via
-  a closure, and extends `PageProps` in `types/index.d.ts`.
+- **`day-03a` is committed.** HEAD is `87dfe4d`. `day-03b` starts
+  cleanly on top of it.
+- **§6.3 of `day-03b` was wired against `HandleInertiaRequests.php`.**
+  The file is currently pristine Breeze — `share()` returns only
+  `auth.user`. The manual's Find block will match.
 - **`CardPolicy@create` takes a `Deck`, not a `Card`.** The call is
   `$user->can('create', [Card::class, $deck])`. Laravel resolves this
   against the policy's `create(User, Deck)` method. This is the one
   non-obvious piece of the card authorization model.
-- **`04-features.md` §3.1 is wrong and gets fixed in `day-03b`'s commit.**
-  It says card create authorizes via `DeckPolicy@update`. The code uses
-  `CardPolicy`. The doc is corrected in the same commit, per the doc's
-  own rule ("when code and this doc disagree, fix both in the same
-  commit").
+- **`04-features.md` §3.1 is wrong and gets fixed in `day-03b`'s
+  commit.** It says card create authorizes via `DeckPolicy@update`. The
+  code uses `CardPolicy`. The doc is corrected in the same commit, per
+  the doc's own rule ("when code and this doc disagree, fix both in the
+  same commit").
 - **`ease_factor` is a `decimal(4,2)` cast — it returns a string, not a
   float.** Test assertions use `assertSame('2.50', ...)`, not
   `assertSame(2.5, ...)`. Same applies to any comparison on that column.
+- **`Decks/Show.tsx` gets edited twice today.** Once in `day-03a` §4.2
+  (committed), once in `day-03b` §6.5. The second edit builds on the
+  first.
+- **`npm run build` before `php artisan test`.** Always. Especially
+  today, since `Cards/Create.tsx` and `Cards/Edit.tsx` will be
+  rendered by new Inertia tests.
 
-### Known deferred items (do not fix during Day 3)
+### Known deferred items (do not fix during Day 3b)
 
-- **`GuestLayout.tsx` and `Auth/*` pages are not dark-swept.** Deferred to
-  Day 7. If the login page looks wrong in dark mode after `day-03a`, that
-  is expected, not a regression.
-- **`DeckForm.tsx` uses a raw `<textarea>` and `<input type="checkbox">`
-  instead of the `TextInput` and `Checkbox` components.** Its dark
-  variants are applied inline in `day-03a` §2.16. The refactor to use the
-  components is Day 7.
-- **`CardForm.tsx` follows the same inline-textarea pattern.** A
-  `TextArea` component is not extracted. Three usages would justify it;
-  two does not.
-- **No toast system.** `day-03b` delivers the "Card added. Add another?"
-  message as an inline flash above the form, not a toast. The toast
-  system (`04-features.md` §8.3) is a later day.
-- **`@tailwindcss/vite` is a dead dependency** in `package.json`, pulled in
-  by Laravel 12's default. Not imported, not used. Day 7 cleanup. Note
-  that `npm ls tailwindcss` shows two Tailwind majors installed — v3.4.19
-  (used) and v4.3.3 (pulled in by `@tailwindcss/vite`). The v4 plugin is
-  not imported in `vite.config.js`, so it is inert. Do not `npm update`
-  casually until this is cleaned up.
+**From Day 2, still deferred:**
+
+- **`DeckForm.tsx` and `CardForm.tsx` use raw `<textarea>` and
+  `<input type="checkbox">` instead of `TextInput` and `Checkbox`.**
+  Their dark variants are inline (applied in `day-03a` §2.16 and
+  `day-03b` §5.1 respectively). Refactor to use the components is
+  Day 7. Noted because it's a drift hazard.
+- **`@tailwindcss/vite` is a dead dependency** in `package.json`,
+  pulled in by Laravel 12's default. **Verified inert 2026-09-22:**
+  `vite.config.js` does not import it, `postcss.config.js` uses the
+  v3 `tailwindcss` plugin. Two Tailwind majors are installed (v3.4.19
+  used, v4.3.3 pulled in by the v4 plugin but never imported). Do not
+  `npm update` casually until this is cleaned up. Day 7.
 - **Two migrations share identical timestamps** (`add_theme` /
   `create_decks` pair, `ai_usage_logs` / `review_logs` pair). Harmless
-  currently because file-name ordering saves us. Fragile if a future
-  migration depends on order. Note only; no fix needed.
+  because file-name ordering saves us. Fragile if a future migration
+  depends on order. Note only; no fix needed.
 - **Two commits with identical messages** in the log (`575f7a2`,
   `0affe11` — both "Day 3: planning complete…"). Harmless. No rewrite
-  planned.
-- **`laravelVersion` and `phpVersion` props** are still passed to the
-  Welcome route closure. After `day-03a` §5, the component does not use
-  them. Harmless unused props, pruned when `routes/web.php` is next
-  edited for another reason.
+  planned. **Kept deliberately** as an honest record of planning time.
+
+**From Day 3a, new:**
+
+- **`GuestLayout.tsx` and `Auth/*` pages are not dark-swept.**
+  Confirmed visually during §7: the outer page background and form
+  card render light while the form _components_ inside them render
+  dark. Incoherent mixed-theme result. Deferred to Day 7.
+  Symptom recorded so Day 7 doesn't re-diagnose: "light chrome around
+  dark form components."
+- **Mobile horizontal padding is not standardized across pages.**
+  `Decks/Show` got `px-4 sm:px-6 lg:px-8` on its parent in `day-03a`
+  §4.2's §7 follow-up. The other pages still use Breeze's default
+  `sm:px-6 lg:px-8`, so their content touches the mobile edge:
+    - `Decks/Index.tsx`
+    - `Decks/Create.tsx`
+    - `Decks/Edit.tsx`
+    - `Profile/Edit.tsx`
+    - `Cards/Create.tsx` and `Cards/Edit.tsx` (built today — apply
+      the pattern when they're written, or leave and fix Day 7; the
+      manual as written uses `sm:px-6 lg:px-8`)
+      Day 7 task: one pass, all pages, one commit.
+- **Deck description hierarchy.** Wrapped in a surface panel during
+  Day 3a §7 fixes. If after living with it, it still reads as filler,
+  the next step is making the field optional in the form (not
+  re-styling). Day 7 conversation.
+- **`/dashboard` route cleanup.** Six Breeze post-auth controllers
+  still `route('dashboard', ...)`. Every flow works via the redirect
+  in `routes/web.php`. Cleanup: rewrite those six to
+  `route('decks.index', ...)`, then delete the `/dashboard` route.
+  Day 7.
+- **Logo replacement.** Replace `ApplicationLogo`'s Laravel wordmark
+  SVG with a custom `?`+lightbulb mark — the `?` represents recall,
+  the lightbulb represents insight, and fused they represent the
+  study loop. Also thematically ties to TOTES' secondary reading as
+  "thoughts." **Single navbar instance**, brand mark alongside the
+  wordmark. Decisions to make on Day 7: (1) monochrome (inherits
+  `fill-current`, matches every theme) vs. two-color (distinctive,
+  needs per-theme treatment); (2) favicon update to match. **Do not
+  start this mid-sweep or mid-CRUD.**
+- **No toast system.** `day-03b` delivers the "Card added. Add
+  another?" message as an inline flash above the form, not a toast.
+  The toast system (`04-features.md` §8.3) is a later day.
+- **`laravelVersion` and `phpVersion` props** still passed to the
+  Welcome route closure. After `day-03a` §5, `Welcome.tsx` no longer
+  destructures them. Harmless unused props, pruned when
+  `routes/web.php` is next edited for another reason.
+- **Pre-paint theme script placement.** `app.blade.php` runs the
+  `<script>` after `</body>` and only sets `class="dark"` server-side
+  for `dark`, not for `system`. There is a one-frame flash of light
+  theme for `system`-theme users on cold load. Observed during
+  `day-03a`, confirmed benign for the current page structure.
+  Day 7 polish if it becomes noticeable.
 
 ### Environment facts
 
 - **PHP 8.4 standalone** at `C:\php84`. Git Bash `php` resolves there.
-- **Laravel 12**, not 11. Day 0 docs say 11; update `02-architecture.md`'s
-  stack table when convenient.
+- **Laravel 12**, not 11. Day 0 docs say 11; update
+  `02-architecture.md`'s stack table when convenient (Day 9).
 - **MariaDB, not MySQL.** XAMPP's bundled DB. Behaves compatibly.
-- **`DB_HOST=127.0.0.1`**, not `localhost`. Windows IPv6 resolution gotcha.
+- **`DB_HOST=127.0.0.1`**, not `localhost`. Windows IPv6 resolution
+  gotcha. **Browser must use `localhost`, not `127.0.0.1` — see the
+  origin-mismatch note above.**
 - **PsySH pinned to 0.12.19** in `composer.json`.
 - **`@types/node` bumped to `^22.0.0`** (Vite 7 requirement).
 - **Tailwind resolved version is 3.4.19.** `indigo-950` is available.
+  The `indigo-950/50` opacity variant is used in `ResponsiveNavLink`.
 - **`The User::query()->delete()` cleanup command** cascades to decks,
-  cards, and review logs. If you have real development accounts you want
-  to keep, avoid it or scope it narrowly.
+  cards, and review logs. If you have real development accounts you
+  want to keep, avoid it or scope it narrowly.
+- **`public/build/` is gitignored.** Confirmed via `git status` during
+  Day 3a commit — build artifacts do not appear as modified. `npm run
+build` before tests is mandatory, not optional.
 
 ### Voice rules (enforced throughout)
 
@@ -323,24 +439,24 @@ If this session moves to a fresh conversation, the new assistant has no
 memory of this one. To get productive fast, paste these in order:
 
 1. **This file** (`docs/SESSION-STATE.md`) — the current state.
-2. **`build-notes/day-03a-dark-sweep.md`** — the first manual to execute.
-3. **`build-notes/day-03b-card-crud.md`** — the second manual.
+2. **`build-notes/day-03b-card-crud.md`** — the manual to execute.
+3. **`docs/10-development-log.md`** — only if it needs updating.
 
-That is enough to resume. If the assistant needs to see a source file,
-it should ask for the path and you `cat` it — **do not let it guess at
-file contents.** The pull model is: the assistant names a path, you paste
-the contents. This has caught real errors this session (a stale dark-mode
-assumption, a spec that contradicted itself, a test failure caused by a
-stale Vite manifest).
+That is enough to resume. If the assistant needs to see a source file, it
+should ask for the path and you `cat` it — **do not let it guess at
+file contents.** The pull model is: the assistant names a path, you
+paste the contents. This has caught real errors this session (a stale
+dark-mode assumption, a spec that contradicted itself, a test failure
+caused by a stale Vite manifest, an origin mismatch masquerading as a
+routing bug).
 
 **Opening message for the new conversation, in the assistant's terms:**
 
-> I'm continuing a 9-day portfolio project called TOTES. Day 3 planning
-> is complete. Today is Day 3 execution: apply `day-03a` (dark mode sweep
+> I'm continuing a 9-day portfolio project called TOTES. Day 3a is
+> complete and committed (dark sweep, mobile toggle, Welcome reduction,
+> Dashboard removal). Today is Day 3b: card CRUD.
 >
-> - mobile toggle + page sweep + Welcome reduction; §6 Dashboard removal
->   already done) and then `day-03b` (card CRUD). Attached are
->   `SESSION-STATE.md`, `day-03a-dark-sweep.md`, and `day-03b-card-crud.md`.
+> Attached are `SESSION-STATE.md` and `day-03b-card-crud.md`.
 >
 > Act as a senior engineer. Explain _why_ for Laravel 12- and Inertia-2-
 > specific things; I know PHP but I'm new to Laravel, Inertia, and REST.
@@ -355,27 +471,27 @@ stale Vite manifest).
 >
 > Ready when you are. Where do we start?
 
-**If the new assistant drifts** — tries to re-plan Day 3, re-litigate a
-frozen decision, or prescribe edits to a file it has not seen — point it
-at the section of this file or the relevant manual section. The plans are
-written; execution is the task.
+**If the new assistant drifts** — tries to re-plan Day 3b, re-litigate
+a frozen decision, or prescribe edits to a file it has not seen — point
+it at the section of this file or the relevant manual section. The plan
+is written; execution is the task.
 
 ---
 
 ## Day Counter
 
-| Day | Status  | Focus                                                      |
-| --- | ------- | ---------------------------------------------------------- |
-| 0   | Done    | Documentation                                              |
-| 1   | Done    | Foundation                                                 |
-| 2   | Done    | Deck CRUD + Icon picker + Theme toggle                     |
-| 3   | Planned | Dark sweep + Mobile toggle + Welcome reduction + Card CRUD |
-| 4   | Pending | AI generation (text + PDF/DOCX)                            |
-| 5   | Pending | Study mode + SM-2                                          |
-| 6   | Pending | Session analysis                                           |
-| 7   | Pending | Polish + Security + Responsiveness pass                    |
-| 8   | Pending | Deployment                                                 |
-| 9   | Pending | Buffer + Final docs                                        |
+| Day | Status             | Focus                                            |
+| --- | ------------------ | ------------------------------------------------ |
+| 0   | Done               | Documentation                                    |
+| 1   | Done               | Foundation                                       |
+| 2   | Done               | Deck CRUD + Icon picker + Theme toggle           |
+| 3   | In progress (3a ✓) | Dark sweep + Mobile toggle + Welcome + Card CRUD |
+| 4   | Pending            | AI generation (text + PDF/DOCX)                  |
+| 5   | Pending            | Study mode + SM-2                                |
+| 6   | Pending            | Session analysis                                 |
+| 7   | Pending            | Polish + Security + Responsiveness pass          |
+| 8   | Pending            | Deployment                                       |
+| 9   | Pending            | Buffer + Final docs                              |
 
 ---
 
