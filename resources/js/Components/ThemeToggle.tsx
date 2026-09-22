@@ -73,7 +73,7 @@ export default function ThemeToggle() {
             onClick={cycle}
             title={label}
             aria-label={label}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-md text-gray-500 transition hover:text-gray-700 focus:outline-none"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-md text-gray-500 dark:text-gray-400 transition hover:text-gray-700 dark:hover:text-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:focus-visible:ring-indigo-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800"
         >
             <Icon icon={icon} className="h-5 w-5" />
         </button>

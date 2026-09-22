@@ -37,21 +37,21 @@ export default function Show({ deck }: { deck: Deck }) {
                             icon={deck.icon ?? 'mdi:book-open-page-variant'}
                             className={`h-6 w-6 ${color.text}`}
                         />
-                        <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                        <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-100">
                             {deck.name}
                         </h2>
                     </div>
                     <div className="flex items-center gap-3">
                         <Link
                             href={route('decks.edit', deck.id)}
-                            className="text-sm text-gray-500 hover:text-gray-700"
+                            className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                         >
                             Edit
                         </Link>
                         <button
                             type="button"
                             onClick={() => setConfirmingDelete(true)}
-                            className="text-sm text-red-600 hover:text-red-700"
+                            className="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
                         >
                             Delete
                         </button>
@@ -62,11 +62,13 @@ export default function Show({ deck }: { deck: Deck }) {
             <Head title={deck.name} />
 
             <div className="py-12">
-                <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
                     {deck.description && (
-                        <p className="text-sm text-gray-600">
-                            {deck.description}
-                        </p>
+                        <div className="rounded-lg bg-white dark:bg-gray-800 p-4 shadow-sm sm:rounded-lg sm:p-6">
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                {deck.description}
+                            </p>
+                        </div>
                     )}
 
                     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -76,9 +78,9 @@ export default function Show({ deck }: { deck: Deck }) {
                         <Stat label="Last studied" value="Never" />
                     </div>
 
-                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                        <div className="flex items-center justify-between border-b border-gray-100 p-6">
-                            <h3 className="font-medium text-gray-900">
+                    <div className="overflow-hidden bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg">
+                        <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 p-6">
+                            <h3 className="font-medium text-gray-900 dark:text-gray-100">
                                 Cards
                             </h3>
                             <div className="flex items-center gap-2">
@@ -86,7 +88,7 @@ export default function Show({ deck }: { deck: Deck }) {
                                     type="button"
                                     disabled
                                     title="Available on Day 3"
-                                    className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-400"
+                                    className="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-400 dark:text-gray-500"
                                 >
                                     Add card
                                 </button>
@@ -94,13 +96,13 @@ export default function Show({ deck }: { deck: Deck }) {
                                     type="button"
                                     disabled
                                     title="Available on Day 4"
-                                    className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-400"
+                                    className="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-400 dark:text-gray-500"
                                 >
                                     Generate with AI
                                 </button>
                             </div>
                         </div>
-                        <div className="p-12 text-center text-sm text-gray-500">
+                        <div className="p-12 text-center text-sm text-gray-500 dark:text-gray-400">
                             No cards yet. Generate a batch from your notes, or
                             add one manually.
                         </div>
@@ -114,10 +116,10 @@ export default function Show({ deck }: { deck: Deck }) {
                 maxWidth="md"
             >
                 <div className="p-6">
-                    <h2 className="text-lg font-medium text-gray-900">
+                    <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
                         Delete &ldquo;{deck.name}&rdquo;?
                     </h2>
-                    <p className="mt-2 text-sm text-gray-500">
+                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                         This will also delete {deck.cards_count} cards and all
                         their review history. This cannot be undone.
                     </p>
@@ -140,11 +142,11 @@ export default function Show({ deck }: { deck: Deck }) {
 
 function Stat({ label, value }: { label: string; value: number | string }) {
     return (
-        <div className="rounded-lg bg-white p-4 shadow-sm">
-            <div className="text-xs uppercase tracking-wide text-gray-500">
+        <div className="rounded-lg bg-white dark:bg-gray-800 p-4 shadow-sm">
+            <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 {label}
             </div>
-            <div className="mt-1 text-2xl font-semibold text-gray-900">
+            <div className="mt-1 text-2xl font-semibold text-gray-900 dark:text-gray-100">
                 {value}
             </div>
         </div>

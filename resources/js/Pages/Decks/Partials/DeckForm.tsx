@@ -56,7 +56,7 @@ export default function DeckForm({
                     id="description"
                     value={form.data.description}
                     onChange={(e) => form.setData('description', e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-indigo-500 dark:focus:ring-indigo-400"
                     rows={3}
                     placeholder="What's this deck for?"
                 />
@@ -93,13 +93,13 @@ export default function DeckForm({
                         onChange={(e) =>
                             form.setData('shuffle_default', e.target.checked)
                         }
-                        className="mt-0.5 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                        className="mt-0.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-400 dark:focus:ring-offset-gray-800"
                     />
                     <div>
-                        <span className="text-sm font-medium text-gray-900">
+                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                             Shuffle cards by default
                         </span>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
                             Off keeps cards in the order you added them.
                         </p>
                     </div>
@@ -113,7 +113,7 @@ export default function DeckForm({
                 </PrimaryButton>
                 <Link
                     href={cancelHref}
-                    className="text-sm text-gray-500 hover:text-gray-700"
+                    className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                 >
                     Cancel
                 </Link>

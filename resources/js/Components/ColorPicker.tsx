@@ -18,7 +18,7 @@ export default function ColorPicker({ value, onChange }: Props) {
                         'h-8 w-8 rounded-full transition ' +
                         color.bg +
                         (color.value === value
-                            ? ' ring-2 ring-gray-900 ring-offset-2'
+                            ? ' ring-2 ring-gray-900 dark:ring-gray-100 ring-offset-2 dark:ring-offset-gray-800'
                             : ' hover:scale-110')
                     }
                 />

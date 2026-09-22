@@ -29,7 +29,7 @@ export default function Edit({ deck }: { deck: Deck }) {
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-100">
                     Edit deck
                 </h2>
             }
@@ -38,7 +38,7 @@ export default function Edit({ deck }: { deck: Deck }) {
 
             <div className="py-12">
                 <div className="mx-auto max-w-2xl sm:px-6 lg:px-8">
-                    <div className="overflow-hidden bg-white p-6 shadow-sm sm:rounded-lg">
+                    <div className="overflow-hidden bg-white dark:bg-gray-800 p-6 shadow-sm sm:rounded-lg">
                         <DeckForm
                             form={form}
                             submitLabel="Save changes"
