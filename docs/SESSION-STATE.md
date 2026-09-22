@@ -4,22 +4,24 @@
 > every session. It's a lightweight handoff — not a replacement for the
 > development log, just a quick "where we are right now" reference.
 
-**Last updated:** 2026-09-22 (Day 3a complete and committed; Day 3b pending)
+**Last updated:** 2026-09-23 (Day 3 complete; Day 4 pending)
 
 ---
 
 ## Current Status
 
-- **Current day:** Day 3, mid-execution. `day-03a` is done and pushed
-  (commit `87dfe4d`). `day-03b` (card CRUD) has not started.
-- **Phase:** Day 3a delivered the full dark-mode sweep across 25 files, the
-  mobile theme toggle move, the Welcome page reduction, and four §7 fixes
-  found during verification. Day 3b is unchanged from the original plan:
-  card CRUD.
+- **Current day:** Day 3 complete. Both halves shipped: `day-03a`
+  (commit `87dfe4d`) and `day-03b` (commit `5851d2c`). Day 4 (AI
+  generation) has not started.
+- **Phase:** Card CRUD is done end-to-end — backend (`StoreCardRequest`,
+  `CardPolicy`, `CardController`, shallow nested routes), factory and
+  tests, and frontend (`CardForm`, `Cards/Create`, `Cards/Edit`, card
+  list with pagination and delete modal on `Decks/Show`). All 63 tests
+  pass; manual verification cleared on all five passes.
 - **Repo:** https://github.com/chunnymunnydocchi/totes.git
 - **Local path:** `~/Desktop/main works/totes`
-- **HEAD:** `87dfe4d` — "Day 3a: dark mode sweep, mobile theme toggle,
-  Welcome reduction, Dashboard removal"
+- **HEAD:** `5851d2c` — "Day 3b: card CRUD" (the amended commit; original
+  was rewritten before push to fold in the `.gitignore` change)
 
 ---
 
@@ -162,8 +164,8 @@ Welcome reduction, Dashboard removal"
       loud on `gray-900`; 50% opacity reads as a tint. Same treatment on
       `dark:focus:bg-indigo-900` → `dark:focus:bg-indigo-900/50`.
 - [x] `ThemeToggle.tsx` — added `focus-visible:ring-2
-    focus-visible:ring-indigo-500 dark:focus-visible:ring-indigo-400
-    focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800`.
+  focus-visible:ring-indigo-500 dark:focus-visible:ring-indigo-400
+  focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800`.
       The component had `focus:outline-none` and no ring replacement.
       `focus-visible` (not `focus`) so the ring appears on Tab, not on
       mouse click. Offset matches the nav surface (`gray-800`), not the
@@ -174,13 +176,13 @@ Welcome reduction, Dashboard removal"
       "the text inside is focused" instead of "the box is focused."
       Correct fix: move the focus indicator to the **container** with
       `focus-within:border-indigo-500 dark:focus-within:border-indigo-400
-    focus-within:ring-1 focus-within:ring-indigo-500
-    dark:focus-within:ring-indigo-400`, and revert the input to
+  focus-within:ring-1 focus-within:ring-indigo-500
+  dark:focus-within:ring-indigo-400`, and revert the input to
       `focus:ring-0`. Now matches every other input in the app.
 - [x] `Decks/Show.tsx` — description was a bare `<p>` on the page
       background, reading as filler/sub-header. Wrapped in a surface
       panel (`rounded-lg bg-white dark:bg-gray-800 p-4 shadow-sm
-    sm:p-6`), matching the existing visual language of the stat cards.
+  sm:p-6`), matching the existing visual language of the stat cards.
       Also fixed mobile horizontal padding on the parent container:
       `sm:px-6 lg:px-8` → `px-4 sm:px-6 lg:px-8`. The stat cards and
       cards panel were also touching the mobile edge; one class fixed
@@ -213,71 +215,126 @@ produced a false-positive "bug" — `/dashboard` redirected to `/login` at
 `localhost` in the browser for the rest of the build.** `DB_HOST` stays
 `127.0.0.1` (separate concern, PHP-side only).
 
+### Day 3b — Card CRUD (complete)
+
+**Commit:** `5851d2c` — "Day 3b: card CRUD" (amended before push to fold
+in the `.gitignore` change; original was `1e4a20f`-class pre-amend commit,
+rewritten with `--amend` and then pushed — safe because push hadn't
+happened yet)
+
+**Files created (9):**
+
+- [x] `app/Http/Requests/StoreCardRequest.php` — validation for create and
+      update, reused for both
+- [x] `app/Policies/CardPolicy.php` — ownership via `$card->deck->user_id`;
+      `create` takes a `Deck`, not a `Card`
+- [x] `app/Http/Controllers/Web/CardController.php` — `create`, `store`,
+      `edit`, `update`, `destroy`; no `index`/`show`, per shallow `except`
+- [x] `database/factories/CardFactory.php` — SM-2 defaults hardcoded,
+      `deck_id => Deck::factory()` so parent is inferred if not given
+- [x] `tests/Feature/Cards/CardCrudTest.php` — 16 tests
+- [x] `tests/Feature/Cards/CardFactoryTest.php` — 3 tests
+- [x] `resources/js/Pages/Cards/Partials/CardForm.tsx` — three raw
+      `<textarea>`s (front, back, explanation), inline dark classes
+      matching `DeckForm`'s post-sweep textarea exactly
+- [x] `resources/js/Pages/Cards/Create.tsx` — create page, with inline
+      flash banner for "Card added. Add another?"
+- [x] `resources/js/Pages/Cards/Edit.tsx` — edit page, pre-filled, with
+      `card.explanation ?? ''` handling the nullable column
+
+**Files modified (7):**
+
+- [x] `routes/web.php` — shallow nested card routes, plus `->names()`
+      override (see "session-discovery" below)
+- [x] `app/Models/Card.php` — added `isDue()` (read-only check; scheduling
+      writes are Day 5's `Sm2Scheduler`)
+- [x] `app/Http/Controllers/Web/DeckController.php` — `show` now paginates
+      cards (20/page, `orderBy('due_at')` asc) and passes a `cards` prop
+- [x] `app/Http/Middleware/HandleInertiaRequests.php` — shares
+      `flash.success` via closure (lazy evaluation, not optional)
+- [x] `resources/js/types/index.d.ts` — extended `PageProps` with `flash`
+- [x] `resources/js/Pages/Decks/Show.tsx` — added `CardType`/`Paginated<T>`
+      types, `cards` prop, card list with per-row Edit/Delete, pagination
+      footer, card delete modal, `formatDue` helper
+- [x] `docs/04-features.md` §3.1 — authorization line corrected:
+      `CardPolicy@create`, not `DeckPolicy@update`
+- [x] `.gitignore` — added `storage/framework/lsp-*.php` to ignore IDE
+      language-server temp files (appeared during the session)
+
+**Session-discovery note (route-name asymmetry):** `Route::resource(...)->shallow()`
+names non-shallow routes `decks.cards.create` / `decks.cards.store`, but
+shallow routes get the short `cards.edit` / `cards.update` / `cards.destroy`.
+This asymmetry is not obvious and is not documented next to `shallow()`.
+7 tests failed on first run with `Route [cards.create] not defined`. Fixed
+by adding `->names(['create' => 'cards.create', 'store' => 'cards.store'])`
+to the resource, plus an explanatory comment. **Do not remove the
+`->names()` override without re-checking the test suite.**
+
+**Session-discovery note (419 during manual auth test):** during §8.4, the
+first attempt to test User B's DELETE against User A's card returned 419
+(CSRF token mismatch). This was **not a bug** — the test recipe used
+`document.querySelector('meta[name="csrf-token"]')`, which doesn't exist
+in Breeze's default layout. The correct approach reads the `XSRF-TOKEN`
+cookie instead. The 419 actually _proved_ CSRF is active. The follow-up
+with the cookie approach returned 404, which is the correct authorization
+response. **Lesson for future manual auth tests: use the cookie, not the
+meta tag.**
+
+**Session-discovery note (`ease_factor` cast):** the `day-03b` manual said
+`ease_factor` uses a `decimal(4,2)` cast and returns a string. The actual
+`Card` model uses `'ease_factor' => 'float'`, which returns a PHP float.
+The manual's assertions (`assertSame('2.50', ...)`) would have failed.
+Fixed by changing assertions to `assertSame(2.5, ...)` and `assertSame(2.3, ...)`.
+**The model's `'float'` cast is correct and stays. Do not "fix" it to
+`'decimal:2'` — that would change frontend rendering on Day 6.**
+
+**Verification:**
+
+- [x] `npm run build` clean (1025 modules, no type errors)
+- [x] `php artisan test` — **63 passed, 227 assertions**
+- [x] §8.2 manual lifecycle: create, flash, edit, delete, cancel, empty
+      state — all green
+- [x] §8.3 dark mode + light mode + focus rings on Tab — all green
+- [x] §8.4 authorization: 4 checks as User B, all returned 404 — correct
+- [x] §8.5 pagination: 26 cards in deck 5, 20/page, `preserveScroll`
+      confirmed working — all green
+- [x] Manual auth test using `XSRF-TOKEN` cookie — 404 (correct)
+
 ---
 
 ## What's Next
 
-**Day 3b execution. One manual: `build-notes/day-03b-card-crud.md`.**
-`day-03a` is committed; the manual's dependency ("`day-03a` must be
-committed first") is satisfied.
+**Day 4 — AI flashcard generation.** No manual written yet; that's the
+first task of the next session.
 
-### Execution sequence
+### Scope (from `docs/04-features.md` §4)
 
-1. **Start the stack** (see "Session startup" below). Use
-   `localhost:8000`, not `127.0.0.1:8000`.
-2. **`npm run build`** — refresh the Vite manifest before tests. The
-   manifest is gitignored, so `day-03a`'s build artifacts are on disk
-   but a fresh checkout would need a rebuild.
-3. **Execute `build-notes/day-03b-card-crud.md`.**
-    - §3: backend — `StoreCardRequest`, `CardPolicy`, `CardController`,
-      routes, `Card::isDue()`.
-    - §4: `CardFactory`, `CardCrudTest`, `CardFactoryTest`.
-    - §5: `CardForm.tsx`.
-    - §6: `Cards/Create.tsx`, `Cards/Edit.tsx`, flash plumbing in
-      `HandleInertiaRequests`, `PageProps` extension, `Decks/Show.tsx`
-      card list + pagination + delete modal.
-    - §7: doc fix in `04-features.md` §3.1.
-    - §8: verify — tests, manual lifecycle, dark mode, authorization,
-      pagination.
-    - §9: one commit for card CRUD.
-4. **Update this file** with a "Day 3b — Execution" subsection under
-   What's Done, move Day 3 to done in the Day Counter.
-5. **Update `docs/10-development-log.md`** with the full Day 3 entry
-   (both 3a and 3b), same format as Day 2's entry. **Do this at end of
-   day, after 3b is committed** — the entry needs the full arc.
-6. **Commit the state + dev log updates, push.**
+- Generate Cards modal on `/decks/{deck}` — replaces the currently
+  disabled "Generate with AI" stub
+- Text paste tab + PDF/DOCX upload tab
+- `POST /api/v1/decks/{deck}/generate` endpoint (REST, not Inertia)
+- Groq API integration via `AiClientInterface`
+- Rate limiting via `ai_usage_logs` table (daily cap, default 10)
+- Input size cap (default 5,000 chars)
+- Response handling: insert cards, update usage footer
 
-### Files this session will create
+### Pre-conditions before Day 4 work
 
-From `day-03b`:
+- `.env` needs `GROQ_API_KEY` (currently absent). Get one from
+  console.groq.com before starting.
+- `AiClientInterface.php` exists as a stub — the concrete implementation
+  will be written Day 4.
+- `GenerateCardsRequest` doesn't exist yet.
+- `Api\V1\GenerateCardsController` doesn't exist yet.
+- The disabled "Generate with AI" button on `Decks/Show.tsx` is the
+  hook point — it currently has `title="Available on Day 4"`.
 
-- `app/Http/Requests/StoreCardRequest.php`
-- `app/Policies/CardPolicy.php`
-- `app/Http/Controllers/Web/CardController.php`
-- `database/factories/CardFactory.php`
-- `tests/Feature/Cards/CardCrudTest.php`
-- `tests/Feature/Cards/CardFactoryTest.php`
-- `resources/js/Pages/Cards/Create.tsx`
-- `resources/js/Pages/Cards/Edit.tsx`
-- `resources/js/Pages/Cards/Partials/CardForm.tsx`
+### Deferred items that touch Day 4
 
-### Files this session will modify
-
-From `day-03b`:
-
-- `app/Models/Card.php` — add `isDue()`
-- `routes/web.php` — add shallow nested card routes
-- `app/Http/Controllers/Web/DeckController.php` — paginate cards in
-  `show`, pass `cards` prop
-- `app/Http/Middleware/HandleInertiaRequests.php` — share
-  `flash.success` via closure
-- `resources/js/types/index.d.ts` — extend `PageProps` with `flash`
-- `resources/js/Pages/Decks/Show.tsx` — card list, pagination, delete
-  modal. **(This file was edited in `day-03a` §4.2. `day-03b` §6.5
-  edits it again. Apply `day-03b`'s changes on top of the committed
-  `day-03a` state.)**
-- `docs/04-features.md` §3.1 — authorization line: `CardPolicy`, not
-  `DeckPolicy`
+- **None.** Day 4 has no dependencies on the Day 7 deferred list. The
+  toast system is still deferred, which means "Generated {n} cards."
+  will be delivered as an inline flash, not a toast — same pattern as
+  "Card added. Add another?" on Day 3b.
 
 ---
 
@@ -299,35 +356,48 @@ None.
 5. **Before running tests: `npm run build`.** The Vite manifest is
    gitignored and goes stale when frontend files change. One test in
    `DeckCrudTest` renders a real Inertia page and fails without it.
-   This bit us on Day 2; don't skip it.
+   This bit us on Day 2 and again on Day 3b; don't skip it.
 
-### Day 3b execution notes
+### Day 4 planning notes
 
-- **`day-03a` is committed.** HEAD is `87dfe4d`. `day-03b` starts
-  cleanly on top of it.
-- **§6.3 of `day-03b` was wired against `HandleInertiaRequests.php`.**
-  The file is currently pristine Breeze — `share()` returns only
-  `auth.user`. The manual's Find block will match.
-- **`CardPolicy@create` takes a `Deck`, not a `Card`.** The call is
-  `$user->can('create', [Card::class, $deck])`. Laravel resolves this
-  against the policy's `create(User, Deck)` method. This is the one
-  non-obvious piece of the card authorization model.
-- **`04-features.md` §3.1 is wrong and gets fixed in `day-03b`'s
-  commit.** It says card create authorizes via `DeckPolicy@update`. The
-  code uses `CardPolicy`. The doc is corrected in the same commit, per
-  the doc's own rule ("when code and this doc disagree, fix both in the
-  same commit").
-- **`ease_factor` is a `decimal(4,2)` cast — it returns a string, not a
-  float.** Test assertions use `assertSame('2.50', ...)`, not
-  `assertSame(2.5, ...)`. Same applies to any comparison on that column.
-- **`Decks/Show.tsx` gets edited twice today.** Once in `day-03a` §4.2
-  (committed), once in `day-03b` §6.5. The second edit builds on the
-  first.
-- **`npm run build` before `php artisan test`.** Always. Especially
-  today, since `Cards/Create.tsx` and `Cards/Edit.tsx` will be
-  rendered by new Inertia tests.
+- **The "Generate with AI" button is currently disabled** with
+  `title="Available on Day 4"` in `Decks/Show.tsx`. Day 4 enables it
+  and wires it to the modal. Locate via `grep -n "Available on Day 4"`.
+- **AI client is Groq, not OpenAI.** `05-ai-integration.md` specifies
+  Groq. Rate limit and cost controls are based on Groq's free tier.
+- **Two AI operations only:** card generation and session analysis.
+  Day 4 does generation. Session analysis is Day 6.
+- **The API route lives under `/api/v1/`,** not the Inertia web routes.
+  This is the hybrid architecture from ADR 0001. Day 4 is the first
+  time the REST side gets used — pay attention to CORS, Sanctum, and
+  how the frontend calls the API without a page reload.
+- **PDF/DOCX extraction** is server-side. `smalot/pdfparser` for PDFs,
+  `phpoffice/phpword` for DOCX (or equivalent) — check
+  `05-ai-integration.md` for the exact libraries. No OCR for scanned
+  PDFs.
 
-### Known deferred items (do not fix during Day 3b)
+### Environment facts
+
+- **PHP 8.4 standalone** at `C:\php84`. Git Bash `php` resolves there.
+- **Laravel 12**, not 11. Day 0 docs say 11; update
+  `02-architecture.md`'s stack table when convenient (Day 9).
+- **MariaDB, not MySQL.** XAMPP's bundled DB. Behaves compatibly.
+- **`DB_HOST=127.0.0.1`**, not `localhost`. Windows IPv6 resolution
+  gotcha. **Browser must use `localhost`, not `127.0.0.1` — see the
+  origin-mismatch note above.**
+- **PsySH pinned to 0.12.19** in `composer.json`.
+- **`@types/node` bumped to `^22.0.0`** (Vite 7 requirement).
+- **Tailwind resolved version is 3.4.19.** `indigo-950` is available.
+  The `indigo-950/50` opacity variant is used in `ResponsiveNavLink`.
+- **`The User::query()->delete()` cleanup command** cascades to decks,
+  cards, and review logs. If you have real development accounts you
+  want to keep, avoid it or scope it narrowly.
+- **`public/build/` is gitignored.** Confirmed again during the Day 3b
+  commit. `npm run build` before tests is mandatory, not optional.
+- **`storage/framework/lsp-*.php` is gitignored** as of Day 3b. IDE
+  language-server temp files won't clutter `git status`.
+
+### Known deferred items (do not fix during Day 4)
 
 **From Day 2, still deferred:**
 
@@ -350,7 +420,7 @@ None.
   `0affe11` — both "Day 3: planning complete…"). Harmless. No rewrite
   planned. **Kept deliberately** as an honest record of planning time.
 
-**From Day 3a, new:**
+**From Day 3a, still deferred:**
 
 - **`GuestLayout.tsx` and `Auth/*` pages are not dark-swept.**
   Confirmed visually during §7: the outer page background and form
@@ -366,9 +436,8 @@ None.
     - `Decks/Create.tsx`
     - `Decks/Edit.tsx`
     - `Profile/Edit.tsx`
-    - `Cards/Create.tsx` and `Cards/Edit.tsx` (built today — apply
-      the pattern when they're written, or leave and fix Day 7; the
-      manual as written uses `sm:px-6 lg:px-8`)
+    - `Cards/Create.tsx` and `Cards/Edit.tsx` (built on Day 3b with
+      the same `sm:px-6 lg:px-8` pattern — same drift)
       Day 7 task: one pass, all pages, one commit.
 - **Deck description hierarchy.** Wrapped in a surface panel during
   Day 3a §7 fixes. If after living with it, it still reads as filler,
@@ -388,9 +457,11 @@ None.
   `fill-current`, matches every theme) vs. two-color (distinctive,
   needs per-theme treatment); (2) favicon update to match. **Do not
   start this mid-sweep or mid-CRUD.**
-- **No toast system.** `day-03b` delivers the "Card added. Add
-  another?" message as an inline flash above the form, not a toast.
-  The toast system (`04-features.md` §8.3) is a later day.
+- **No toast system.** Still deferred after Day 3b. The inline flash
+  pattern is now used twice (`Decks/Create`'s "Deck created." and
+  `Cards/Create`'s "Card added. Add another?"). The toast system
+  (`04-features.md` §8.3) is a Day 7 or later item. **User preference
+  noted 2026-09-23: toasts should auto-dismiss at ~3–5 seconds.**
 - **`laravelVersion` and `phpVersion` props** still passed to the
   Welcome route closure. After `day-03a` §5, `Welcome.tsx` no longer
   destructures them. Harmless unused props, pruned when
@@ -402,25 +473,26 @@ None.
   `day-03a`, confirmed benign for the current page structure.
   Day 7 polish if it becomes noticeable.
 
-### Environment facts
+**From Day 3b, new:**
 
-- **PHP 8.4 standalone** at `C:\php84`. Git Bash `php` resolves there.
-- **Laravel 12**, not 11. Day 0 docs say 11; update
-  `02-architecture.md`'s stack table when convenient (Day 9).
-- **MariaDB, not MySQL.** XAMPP's bundled DB. Behaves compatibly.
-- **`DB_HOST=127.0.0.1`**, not `localhost`. Windows IPv6 resolution
-  gotcha. **Browser must use `localhost`, not `127.0.0.1` — see the
-  origin-mismatch note above.**
-- **PsySH pinned to 0.12.19** in `composer.json`.
-- **`@types/node` bumped to `^22.0.0`** (Vite 7 requirement).
-- **Tailwind resolved version is 3.4.19.** `indigo-950` is available.
-  The `indigo-950/50` opacity variant is used in `ResponsiveNavLink`.
-- **`The User::query()->delete()` cleanup command** cascades to decks,
-  cards, and review logs. If you have real development accounts you
-  want to keep, avoid it or scope it narrowly.
-- **`public/build/` is gitignored.** Confirmed via `git status` during
-  Day 3a commit — build artifacts do not appear as modified. `npm run
-build` before tests is mandatory, not optional.
+- **§3.4 doc drift: "front column is truncated to 80 chars" vs CSS-based
+  truncation.** `04-features.md` §3.4 says the card list front column is
+  truncated to 80 chars with ellipsis. The actual `Decks/Show.tsx` uses
+  Tailwind's `truncate` class, which clips at the container width — more
+  than 80 chars on desktop, less on mobile. Both approaches are defensible;
+  they differ. The doc's own header says "when code and this doc disagree,
+  fix both in the same commit," but this is spec drift, not a bug. **Day 7
+  decision: either change the code to slice at 80, or change the doc to
+  describe container-based truncation.** Note only; do not fix mid-Day 4.
+- **Route-name asymmetry override in `routes/web.php`.** `->names()`
+  override was added to make `cards.create` and `cards.store` match the
+  short form. If anyone touches the card route block later, don't drop
+  the override without running the test suite — the asymmetry will
+  reappear silently.
+- **`.gitignore` now includes `storage/framework/lsp-*.php`.** IDE
+  language-server temp files appear under `storage/framework/` on some
+  setups and would otherwise clutter `git status`. Harmless entry; no
+  action needed.
 
 ### Voice rules (enforced throughout)
 
@@ -439,24 +511,28 @@ If this session moves to a fresh conversation, the new assistant has no
 memory of this one. To get productive fast, paste these in order:
 
 1. **This file** (`docs/SESSION-STATE.md`) — the current state.
-2. **`build-notes/day-03b-card-crud.md`** — the manual to execute.
-3. **`docs/10-development-log.md`** — only if it needs updating.
+2. **`docs/04-features.md`** — the spec for whatever Day 4 feature is
+   being built (AI generation, §4).
+3. **`docs/05-ai-integration.md`** — the AI service design, prompts,
+   cost controls, library choices.
 
 That is enough to resume. If the assistant needs to see a source file, it
 should ask for the path and you `cat` it — **do not let it guess at
 file contents.** The pull model is: the assistant names a path, you
-paste the contents. This has caught real errors this session (a stale
+paste the contents. This has caught real errors this project: a stale
 dark-mode assumption, a spec that contradicted itself, a test failure
 caused by a stale Vite manifest, an origin mismatch masquerading as a
-routing bug).
+routing bug, a route-name asymmetry that failed 7 tests, and a cast
+mismatch that would have failed 3 more.
 
 **Opening message for the new conversation, in the assistant's terms:**
 
-> I'm continuing a 9-day portfolio project called TOTES. Day 3a is
-> complete and committed (dark sweep, mobile toggle, Welcome reduction,
-> Dashboard removal). Today is Day 3b: card CRUD.
+> I'm continuing a 9-day portfolio project called TOTES. Day 3 is
+> complete (dark sweep, mobile toggle, Welcome reduction, Dashboard
+> removal, card CRUD). Today is Day 4: AI flashcard generation.
 >
-> Attached are `SESSION-STATE.md` and `day-03b-card-crud.md`.
+> Attached are `SESSION-STATE.md`, `04-features.md`, and
+> `05-ai-integration.md`.
 >
 > Act as a senior engineer. Explain _why_ for Laravel 12- and Inertia-2-
 > specific things; I know PHP but I'm new to Laravel, Inertia, and REST.
@@ -471,27 +547,27 @@ routing bug).
 >
 > Ready when you are. Where do we start?
 
-**If the new assistant drifts** — tries to re-plan Day 3b, re-litigate
+**If the new assistant drifts** — tries to re-plan Day 4, re-litigate
 a frozen decision, or prescribe edits to a file it has not seen — point
-it at the section of this file or the relevant manual section. The plan
-is written; execution is the task.
+it at the section of this file or the relevant doc. The plan is
+written; execution is the task.
 
 ---
 
 ## Day Counter
 
-| Day | Status             | Focus                                            |
-| --- | ------------------ | ------------------------------------------------ |
-| 0   | Done               | Documentation                                    |
-| 1   | Done               | Foundation                                       |
-| 2   | Done               | Deck CRUD + Icon picker + Theme toggle           |
-| 3   | In progress (3a ✓) | Dark sweep + Mobile toggle + Welcome + Card CRUD |
-| 4   | Pending            | AI generation (text + PDF/DOCX)                  |
-| 5   | Pending            | Study mode + SM-2                                |
-| 6   | Pending            | Session analysis                                 |
-| 7   | Pending            | Polish + Security + Responsiveness pass          |
-| 8   | Pending            | Deployment                                       |
-| 9   | Pending            | Buffer + Final docs                              |
+| Day | Status  | Focus                                            |
+| --- | ------- | ------------------------------------------------ |
+| 0   | Done    | Documentation                                    |
+| 1   | Done    | Foundation                                       |
+| 2   | Done    | Deck CRUD + Icon picker + Theme toggle           |
+| 3   | Done    | Dark sweep + Mobile toggle + Welcome + Card CRUD |
+| 4   | Pending | AI generation (text + PDF/DOCX)                  |
+| 5   | Pending | Study mode + SM-2                                |
+| 6   | Pending | Session analysis                                 |
+| 7   | Pending | Polish + Security + Responsiveness pass          |
+| 8   | Pending | Deployment                                       |
+| 9   | Pending | Buffer + Final docs                              |
 
 ---
 

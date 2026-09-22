@@ -170,13 +170,121 @@ _(Any deviations from the docs. If none, write "None.")_
 
 **Tomorrow (Day 3):** Dark-mode sweep across Breeze components + mobile theme toggle + flashcard CRUD.
 
-## Day 3 — Flashcard Management
+---
 
-**Date:** [fill in]
+## Day 3 — Dark Sweep, Mobile Toggle, Welcome Reduction, Dashboard Removal, and Card CRUD
 
-**Focus:** Manual card CRUD.
+**Date:** 2026-09-22/23 (session crossed midnight)
 
-_(...)_
+**Focus:** Two halves. First half (3a): the dark-mode sweep across the whole frontend, mobile theme toggle move, Welcome page reduction, Dashboard removal verification, and four §7 fixes discovered during verification. Second half (3b): full card CRUD — backend, tests, and frontend.
+
+### Day 3a — Dark sweep and frontend cleanup
+
+**What was built:**
+
+- Dark-mode sweep across **25 files**: 14 components, 1 layout, 10 pages/partials
+    - 14 components: `Checkbox`, `ColorPicker`, `DangerButton`, `Dropdown`, `IconPicker`, `InputError`, `InputLabel`, `Modal`, `NavLink`, `PrimaryButton`, `ResponsiveNavLink`, `SecondaryButton`, `TextInput`, `ThemeToggle`
+    - `Layouts/AuthenticatedLayout.tsx` — full sweep, plus mobile theme toggle move (ThemeToggle to the left of the hamburger, `gap-1` on the container)
+    - 10 pages/partials: `Decks/Index`, `Decks/Create`, `Decks/Edit`, `Decks/Show`, `Decks/Partials/DeckForm`, `Profile/Edit`, `Profile/Partials/DeleteUserForm`, `Profile/Partials/UpdatePasswordForm`, `Profile/Partials/UpdateProfileInformationForm`, `Welcome`
+- `Welcome.tsx` — full reduction. Header wordmark, hero title, open-ended slogan, nav. Logged-in branch shows the user's name truncated at 12 characters. Laravel marketing content deleted.
+- Dashboard removal — applied in an earlier commit (`30ed2c4`), verified not re-executed. The `/dashboard` route redirects to `/decks`; the route name was kept so Breeze's post-auth controllers still resolve.
+
+**§7 fixes discovered during manual verification (in the same commit `87dfe4d`):**
+
+- **`ResponsiveNavLink` active state was too saturated.** `dark:bg-indigo-950` read as a solid block on `gray-900` — visually loud. Changed to `dark:bg-indigo-950/50` (50% opacity). Same treatment for the focus state.
+- **`ThemeToggle` had no focus ring.** It had `focus:outline-none` but no replacement, so keyboard focus was invisible. Added `focus-visible:ring-2 focus-visible:ring-indigo-500 dark:focus-visible:ring-indigo-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800`. `focus-visible` (not `focus`) so the ring only appears on Tab, not on mouse click. Offset matches the nav surface, not the page.
+- **`IconPicker` search input's focus indicator was on the wrong element.** The input had `focus:ring-0`. First fix attempt (`focus:ring-1 focus:ring-inset` on the input) rendered as "the text inside is focused" instead of "the box is focused." Correct fix: move the indicator to the **container** via `focus-within:border-indigo-500 dark:focus-within:border-indigo-400 focus-within:ring-1 focus-within:ring-indigo-500 dark:focus-within:ring-indigo-400`, and revert the input to `focus:ring-0`. Now matches every other input in the app.
+- **`Decks/Show.tsx` description read as filler.** The description was a bare `<p>` on the page background, reading as a sub-header instead of content. Wrapped in a surface panel (`rounded-lg bg-white dark:bg-gray-800 p-4 shadow-sm sm:p-6`), matching the visual language of the stat cards. Also fixed mobile horizontal padding on the parent: `sm:px-6 lg:px-8` → `px-4 sm:px-6 lg:px-8`. The stat cards and cards panel were touching the mobile edge; one class fixed all three.
+
+### Day 3b — Card CRUD
+
+**What was built:**
+
+- `app/Http/Requests/StoreCardRequest.php` — validation for front, back, explanation. Reused for store and update. `due_at` is not user input; the controller sets it.
+- `app/Policies/CardPolicy.php` — ownership via `$card->deck->user_id`. `create` takes a `Deck`, not a `Card`, because there's no card yet when authorizing creation.
+- `app/Http/Controllers/Web/CardController.php` — `create`, `store`, `edit`, `update`, `destroy`. No `index`/`show`, per shallow `except`.
+- Shallow nested card routes in `routes/web.php`, with a `->names()` override (see "What broke" below).
+- `app/Models/Card.php` — added `isDue()` (read-only check; scheduling writes are Day 5's `Sm2Scheduler`).
+- `app/Http/Controllers/Web/DeckController.php` — `show` now paginates cards (20/page, `orderBy('due_at')` asc) and passes a `cards` prop.
+- `app/Http/Middleware/HandleInertiaRequests.php` — shares `flash.success` via closure (lazy evaluation).
+- `resources/js/types/index.d.ts` — extended `PageProps` with `flash`.
+- `database/factories/CardFactory.php` — SM-2 defaults hardcoded, `deck_id => Deck::factory()` so parent is inferred if not given.
+- `tests/Feature/Cards/CardCrudTest.php` — 16 tests.
+- `tests/Feature/Cards/CardFactoryTest.php` — 3 tests.
+- `resources/js/Pages/Cards/Partials/CardForm.tsx` — three raw `<textarea>`s, inline dark classes matching `DeckForm`'s post-sweep textarea exactly.
+- `resources/js/Pages/Cards/Create.tsx` — create page, with inline flash banner for "Card added. Add another?"
+- `resources/js/Pages/Cards/Edit.tsx` — edit page, pre-filled, with `card.explanation ?? ''` handling the nullable column.
+- `resources/js/Pages/Decks/Show.tsx` — added `CardType`/`Paginated<T>` types, `cards` prop, card list with per-row Edit/Delete, pagination footer, card delete modal, and a `formatDue` helper.
+- `docs/04-features.md` §3.1 — authorization line corrected: `CardPolicy@create`, not `DeckPolicy@update`.
+- `.gitignore` — added `storage/framework/lsp-*.php` to ignore IDE language-server temp files.
+
+**What broke / what was slow:**
+
+- **Route-name asymmetry under `->shallow()`.** `Route::resource('decks.cards', ...)->shallow()` names non-shallow routes `decks.cards.create` / `decks.cards.store`, but shallow routes get the short `cards.edit` / `cards.update` / `cards.destroy`. This is documented Laravel behavior but non-obvious. First test run failed 7 tests with `Route [cards.create] not defined`. Fixed by adding `->names(['create' => 'cards.create', 'store' => 'cards.store'])` to the resource, plus a comment so the override doesn't look like cargo cult.
+- **`ease_factor` cast was mis-documented in the manual.** The `day-03b` manual said the `decimal(4,2)` cast returns a string, and the test assertions used `assertSame('2.50', ...)`. The actual `Card` model uses `'ease_factor' => 'float'`, returning a PHP float. Three test assertions would have failed. Fixed by changing assertions to `assertSame(2.5, ...)` and `assertSame(2.3, ...)`. The model's cast is correct and stays.
+- **419 during the manual authorization test.** First attempt to test User B's DELETE against User A's card returned 419 (CSRF mismatch). The test recipe used `document.querySelector('meta[name="csrf-token"]')`, which doesn't exist in Breeze's default layout. The correct approach reads the `XSRF-TOKEN` cookie. The 419 actually proved CSRF was working. The follow-up returned 404, which is the correct authorization response.
+- **Amended commit before push.** The first commit and the `.gitignore` change ended up as two commits with the same message. Rewrote via `git reset --soft HEAD~1` + `git commit --amend` before pushing. Safe because the push hadn't happened yet — a rewrite after push would have required a force push.
+
+**What I learned:**
+
+- **Shallow nesting in Laravel has a naming asymmetry.** URIs are shallow (no `{deck}` prefix on the shallow routes), but names are not — non-shallow routes keep the full parent prefix. `->names()` overrides this. This is the kind of thing that's only obvious after you've hit it.
+- **`abort_unless($user->can(...), 404)` isn't just "return the error code I picked."** 404 vs 403 is a deliberate information-disclosure decision. 403 says "this exists but it's not yours" — enumerable. 404 says nothing — not enumerable. Consistent with `08-security.md`.
+- **`CardPolicy@create` taking a `Deck`, not a `Card`, is the non-obvious piece.** The call is `$user->can('create', [Card::class, $deck])`. Laravel resolves this against the policy's `create(User, Deck)` method. There's no card to authorize yet — you're authorizing "add to this deck."
+- **Inertia shared props should be closures when they read from the session.** `'success' => fn () => $request->session()->get('success')` defers evaluation. Without the closure, the session read runs on every request including ones where the session may not be fully booted.
+- **`preserveScroll` on pagination links.** Normally Inertia resets scroll to the top on navigation. For pagination — same page, different subset of content — that's wrong. One prop, `preserveScroll`, keeps the viewport where it is. Small thing, big UX difference.
+- **`->shallow()` is what makes the controller method signatures legal.** `edit`, `update`, and `destroy` in `CardController` accept only `Card $card`, not `Deck $deck, Card $card`. Without shallow, route model binding would demand both parameters. Shallow isn't just cleaner URLs — it's structural.
+- **CSS `truncate` clips at container width, not a character count.** The doc says "truncated to 80 chars"; the code uses `truncate`. Both work, but they're different. Recorded as a deferred doc/code reconciliation.
+- **`git commit --amend` rewrites the commit hash.** The old hash is gone. Safe before push; a rewrite after push would have required `--force` and published history rewriting.
+- **CSRF and authorization are different gates.** 419 fires at middleware (provenance check — "did this request come from my own pages?"). 404 fires at the controller (authorization check — "is this resource yours?"). Same 4xx family, completely different meaning.
+
+**Decisions made today:**
+
+- **Card authorization uses `CardPolicy`, not `DeckPolicy`.** `04-features.md` §3.1 contradicted itself — §3.1 said `DeckPolicy@update`, §3.2/§3.3 said `CardPolicy@update`/`CardPolicy@delete`. Resolved in favor of `CardPolicy`, doc corrected in the same commit. Reasons: a card route has a `Card`, ownership is transitive via `$card->deck->user_id`, and consistency with `DeckController`'s `abort_unless(..., 404)` pattern.
+- **Card store redirects back to the create form, not the deck page.** Rapid manual entry is the use case. Flash message "Card added. Add another?" appears inline above the form.
+- **New cards get `due_at => now()`.** The migration is nullable, but every card created through normal flows is immediately due. This is what makes new cards show up in study mode on Day 5. `due_at` is never trusted from client input.
+- **Card list paginates 20 per page, sorted `due_at` asc.** Per `04-features.md` §3.4. Page size hardcoded, not query-configurable (a query-string page size is a DoS vector).
+- **Flash delivered as an inline banner, not a toast.** Behavior ships; mechanism (toast system) is a later day. The `04-features.md` §8.3 toast system is still deferred.
+- **The card list uses CSS `truncate`, not a server-side 80-char slice.** Spec drift noted in SESSION-STATE for Day 7 reconciliation.
+- **`CardForm` uses raw `<textarea>`, not `TextInput`.** Cards are long-form (up to 2,000 characters). `TextInput` wraps `<input type="text">`, which can't wrap. Extracting a `TextArea` component is a Day 7 refactor (three usages threshold; we're at two).
+- **`isDue()` added to the `Card` model.** Read-only check. Scheduling writes stay in `Sm2Scheduler` (Day 5).
+- **`.gitignore` extended for IDE language-server temp files.** The LSP files appeared under `storage/framework/` during the session. Small hygiene fix, included in the amended commit.
+
+**Manual verification:**
+
+Day 3a (§7.2–§7.5):
+
+- [x] `npm run build` clean
+- [x] `php artisan test` — 45 passed, 157 assertions
+- [x] Light-mode pass (8 checks)
+- [x] Dark-mode pass (8 checks + six-page list)
+- [x] Mobile pass — theme toggle in top bar, no second toggle in hamburger menu
+- [x] Welcome and Dashboard pass (5 checks)
+- [x] Deferred audit: `/decks/{id}/edit` and account-delete modal confirmed in dark mode
+
+Day 3b (§8.2–§8.5):
+
+- [x] `npm run build` clean (1025 modules, no type errors)
+- [x] `php artisan test` — **63 passed, 227 assertions**
+- [x] Manual card lifecycle: create, flash message appears, edit saves and returns to deck, delete works, cancel works, empty state returns — all green
+- [x] Dark mode: card list, delete modal, create form, edit form all render correctly; backdrop correct; focus rings appear on Tab for all inputs and buttons — all green
+- [x] Authorization as User B: deck page (404), card create form (404), card edit page (404), raw `DELETE /cards/{id}` via console with `XSRF-TOKEN` cookie (404) — all correct
+- [x] Pagination: 26 cards in deck 5, 20 per page, page transitions work, `preserveScroll` confirmed (viewport stays put) — all green
+- [x] No console errors anywhere
+
+**Known gaps (deliberate):**
+
+- **`GuestLayout.tsx` and `Auth/*` pages are not dark-swept.** The outer chrome renders light while form components inside render dark. Incoherent mixed-theme result. Day 7.
+- **Mobile horizontal padding is not standardized.** `Decks/Show` got `px-4` on its parent; every other page (including the new `Cards/Create` and `Cards/Edit`) uses Breeze's default `sm:px-6 lg:px-8`, so content touches the mobile edge. Day 7, one pass, one commit.
+- **No toast system.** Inline flash is used for both "Deck created" and "Card added." `04-features.md` §8.3 specs a real toast (position, 3-second duration, dismissible). Deferred. User preference recorded: toasts should auto-dismiss at ~3–5 seconds.
+- **§3.4 truncation spec drift.** `04-features.md` says "truncated to 80 chars"; `Show.tsx` uses CSS `truncate` (container-based). Day 7 reconciliation.
+- **`/dashboard` route cleanup.** Six Breeze post-auth controllers still `route('dashboard', ...)`. Works via redirect. Day 7.
+- **Logo replacement.** Day 7.
+- **Deck description hierarchy** may still read as filler. If so, the next step is making the field optional in the form (not re-styling). Day 7.
+- **Pre-paint theme script placement.** One-frame light flash for `system`-theme users on cold load. Confirmed benign; Day 7 polish if noticeable.
+
+**Time spent:** [fill in]
+
+**Tomorrow (Day 4):** AI flashcard generation — Groq integration, text + PDF/DOCX input, rate limiting, the Generate modal replacing the disabled stub on `Decks/Show`.
 
 ---
 
